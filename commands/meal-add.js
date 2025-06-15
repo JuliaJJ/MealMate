@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 
-const inProgressRecipes = {}; // temporary in-memory recipe drafts
+// Temporary in-memory storage for in-progress recipes
+const inProgressRecipes = {};
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -10,7 +11,7 @@ module.exports = {
   async execute(interaction) {
     const userId = interaction.user.id;
 
-    // Reset any previous draft
+    // Reset any existing draft
     inProgressRecipes[userId] = {
       name: '',
       ingredients: [],
@@ -27,13 +28,19 @@ module.exports = {
       .setStyle(TextInputStyle.Short)
       .setRequired(true);
 
-    const firstIngredient = new TextInputBuilder()
-      .setCustomId('ingredient')
-      .setLabel('First Ingredient (e.g. 2 cups rice)')
+    const qtyInput = new TextInputBuilder()
+      .setCustomId('ingredient_qty')
+      .setLabel('First Ingredient Quantity (e.g. 2 cups)')
       .setStyle(TextInputStyle.Short)
       .setRequired(true);
 
-    const firstStep = new TextInputBuilder()
+    const ingInput = new TextInputBuilder()
+      .setCustomId('ingredient_name')
+      .setLabel('First Ingredient Name (e.g. rice)')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const stepInput = new TextInputBuilder()
       .setCustomId('step')
       .setLabel('First Step (e.g. Rinse the rice)')
       .setStyle(TextInputStyle.Paragraph)
@@ -41,14 +48,15 @@ module.exports = {
 
     modal.addComponents(
       new ActionRowBuilder().addComponents(nameInput),
-      new ActionRowBuilder().addComponents(firstIngredient),
-      new ActionRowBuilder().addComponents(firstStep)
+      new ActionRowBuilder().addComponents(qtyInput),
+      new ActionRowBuilder().addComponents(ingInput),
+      new ActionRowBuilder().addComponents(stepInput)
     );
 
     await interaction.showModal(modal);
   },
 
-  // This is a helper for later when we break this into a modal handler file:
+  // Helper functions for draft management
   getDraft(userId) {
     return inProgressRecipes[userId];
   },
