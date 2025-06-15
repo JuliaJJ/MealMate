@@ -1,48 +1,63 @@
-const { SlashCommandBuilder } = require('discord.js');
-const db = require('../database/database');
+const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+const inProgressRecipes = {}; // temporary in-memory recipe drafts
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('meal-add')
-    .setDescription('Add a meal to your recipe list')
-    .addStringOption(option =>
-      option.setName('name')
-        .setDescription('Name of the meal')
-        .setRequired(true))
-    .addStringOption(option =>
-      option.setName('ingredients')
-        .setDescription('Ingredients (comma or newline separated)')
-        .setRequired(true))
-    .addStringOption(option =>
-      option.setName('instructions')
-        .setDescription('Instructions for preparing the meal')
-        .setRequired(true)),
-        
+    .setDescription('Start building a new recipe'),
+
   async execute(interaction) {
     const userId = interaction.user.id;
-    const name = interaction.options.getString('name');
-    const ingredients = interaction.options.getString('ingredients');
-    const instructions = interaction.options.getString('instructions');
 
-    try {
-      db.run(
-        `INSERT INTO meals (user_id, name, ingredients, instructions) VALUES (?, ?, ?, ?)`,
-        [userId, name, ingredients, instructions],
-        function (err) {
-          if (err) {
-            console.error(err);
-            return interaction.reply({ content: '❌ Failed to save your meal.', ephemeral: true });
-          }
+    // Reset any previous draft
+    inProgressRecipes[userId] = {
+      name: '',
+      ingredients: [],
+      steps: []
+    };
 
-          interaction.reply({
-            content: `✅ **${name}** was saved to your meal list!`,
-            ephemeral: true
-          });
-        }
-      );
-    } catch (error) {
-      console.error(error);
-      interaction.reply({ content: '⚠️ An error occurred while saving your meal.', ephemeral: true });
-    }
+    const modal = new ModalBuilder()
+      .setCustomId('start-recipe')
+      .setTitle('Start New Meal');
+
+    const nameInput = new TextInputBuilder()
+      .setCustomId('name')
+      .setLabel('Meal Name')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const firstIngredient = new TextInputBuilder()
+      .setCustomId('ingredient')
+      .setLabel('First Ingredient (e.g. 2 cups rice)')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const firstStep = new TextInputBuilder()
+      .setCustomId('step')
+      .setLabel('First Step (e.g. Rinse the rice)')
+      .setStyle(TextInputStyle.Paragraph)
+      .setRequired(true);
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(nameInput),
+      new ActionRowBuilder().addComponents(firstIngredient),
+      new ActionRowBuilder().addComponents(firstStep)
+    );
+
+    await interaction.showModal(modal);
+  },
+
+  // This is a helper for later when we break this into a modal handler file:
+  getDraft(userId) {
+    return inProgressRecipes[userId];
+  },
+
+  setDraft(userId, draft) {
+    inProgressRecipes[userId] = draft;
+  },
+
+  clearDraft(userId) {
+    delete inProgressRecipes[userId];
   }
 };
