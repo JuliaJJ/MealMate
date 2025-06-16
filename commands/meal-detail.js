@@ -16,7 +16,7 @@ module.exports = {
   async autocomplete(interaction) {
     const userId = interaction.user.id;
     const focusedValue = interaction.options.getFocused();
-    
+
     db.all(
       `SELECT name FROM meals WHERE user_id = ? AND name LIKE ? LIMIT 25`,
       [userId, `%${focusedValue}%`],
@@ -41,7 +41,7 @@ module.exports = {
     const name = interaction.options.getString('name');
 
     db.get(
-      `SELECT name, ingredients, instructions FROM meals WHERE user_id = ? AND name = ? COLLATE NOCASE`,
+      `SELECT name, ingredients, instructions, category, tags FROM meals WHERE user_id = ? AND name = ? COLLATE NOCASE`,
       [userId, name],
       (err, row) => {
         if (err) {
@@ -59,8 +59,24 @@ module.exports = {
           });
         }
 
+        const tagsFormatted = row.tags
+          ? row.tags
+              .split(',')
+              .map(tag => tag.trim())
+              .filter(Boolean)
+              .map(tag => `#${tag}`)
+              .join(' ')
+          : '';
+
+        const categoryDisplay = row.category ? `📂 **Category:** ${row.category}\n` : '';
+        const tagsDisplay = tagsFormatted ? `🏷️ **Tags:** ${tagsFormatted}\n` : '';
+
         interaction.reply({
-          content: `📖 **${row.name}**\n\n📝 **Ingredients:**\n${row.ingredients}\n\n👩‍🍳 **Instructions:**\n${row.instructions}`,
+          content:
+            `📖 **${row.name}**\n\n` +
+            `${categoryDisplay}${tagsDisplay}` +
+            `📝 **Ingredients:**\n${row.ingredients}\n\n` +
+            `👩‍🍳 **Instructions:**\n${row.instructions}`,
           ephemeral: true
         });
       }

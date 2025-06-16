@@ -1,71 +1,66 @@
-const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
-
-// Temporary in-memory storage for in-progress recipes
-const inProgressRecipes = {};
+const {
+  SlashCommandBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ActionRowBuilder
+} = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('meal-add')
-    .setDescription('Start building a new recipe'),
+    .setDescription('Start adding a new meal recipe'),
 
   async execute(interaction) {
-    const userId = interaction.user.id;
-
-    // Reset any existing draft
-    inProgressRecipes[userId] = {
-      name: '',
-      ingredients: [],
-      steps: []
-    };
-
     const modal = new ModalBuilder()
       .setCustomId('start-recipe')
-      .setTitle('Start New Meal');
+      .setTitle('Start a New Recipe');
 
     const nameInput = new TextInputBuilder()
       .setCustomId('name')
-      .setLabel('Meal Name')
+      .setLabel('Meal name')
       .setStyle(TextInputStyle.Short)
       .setRequired(true);
 
     const qtyInput = new TextInputBuilder()
-      .setCustomId('ingredient_qty')
-      .setLabel('First Ingredient Quantity (e.g. 2 cups)')
+      .setCustomId('quantity')
+      .setLabel('First ingredient quantity (e.g., 1 cup)')
       .setStyle(TextInputStyle.Short)
       .setRequired(true);
 
-    const ingInput = new TextInputBuilder()
-      .setCustomId('ingredient_name')
-      .setLabel('First Ingredient Name (e.g. rice)')
+    const ingredientInput = new TextInputBuilder()
+      .setCustomId('ingredient')
+      .setLabel('First ingredient name (e.g., flour)')
       .setStyle(TextInputStyle.Short)
       .setRequired(true);
 
     const stepInput = new TextInputBuilder()
       .setCustomId('step')
-      .setLabel('First Step (e.g. Rinse the rice)')
+      .setLabel('First instruction step')
       .setStyle(TextInputStyle.Paragraph)
       .setRequired(true);
+
+    const categoryInput = new TextInputBuilder()
+      .setCustomId('category')
+      .setLabel('Category (e.g., Dinner, Snack)')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false);
+
+    const tagsInput = new TextInputBuilder()
+      .setCustomId('tags')
+      .setLabel('Tags (comma-separated: vegetarian, spicy)')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false);
 
     modal.addComponents(
       new ActionRowBuilder().addComponents(nameInput),
       new ActionRowBuilder().addComponents(qtyInput),
-      new ActionRowBuilder().addComponents(ingInput),
-      new ActionRowBuilder().addComponents(stepInput)
+      new ActionRowBuilder().addComponents(ingredientInput),
+      new ActionRowBuilder().addComponents(stepInput),
+      new ActionRowBuilder().addComponents(categoryInput),
+      new ActionRowBuilder().addComponents(tagsInput)
     );
 
     await interaction.showModal(modal);
-  },
-
-  // Helper functions for draft management
-  getDraft(userId) {
-    return inProgressRecipes[userId];
-  },
-
-  setDraft(userId, draft) {
-    inProgressRecipes[userId] = draft;
-  },
-
-  clearDraft(userId) {
-    delete inProgressRecipes[userId];
   }
 };
